@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1118">
+  <title>Flowstate — Traffic Operations</title>
+  <script>
+    try {
+      const theme = localStorage.getItem('flowstate-theme');
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+    } catch {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/dashboard/style.css">
+  <link rel="stylesheet" href="/dashboard/operations.css">
+  <link rel="stylesheet" href="/dashboard/history.css">
+  <link rel="stylesheet" href="/dashboard/status.css">
+  <link rel="stylesheet" href="/dashboard/countdown.css">
+  <link rel="stylesheet" href="/dashboard/scenario.css">
+  <link rel="stylesheet" href="/dashboard/theme.css">
+  <link rel="stylesheet" href="/dashboard/assistant.css?v=2">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <a class="brand" href="/dashboard/" aria-label="Flowstate dashboard">
+        <span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 22h22M8 17h16M12 12h8M16 5v22"/><circle cx="16" cy="16" r="12"/></svg></span>
+        <span class="brand-name">flowstate<span>TRAFFIC SYSTEMS</span></span>
+      </a>
+      <div class="nav-label">OPERATIONS</div>
+      <a class="nav-link active" href="#overview"><span class="nav-icon">◫</span> Live overview</a>
+      <a class="nav-link" href="#intersection"><span class="nav-icon">⊞</span> Intersection control</a>
+      <a class="nav-link" href="#controller"><span class="nav-icon">✳</span> Signal controller</a>
+      <a class="nav-link" href="#analytics"><span class="nav-icon">⌁</span> Traffic analytics</a>
+      <a class="nav-link" href="#events"><span class="nav-icon">◷</span> Alerts & events</a>
+      <div class="nav-label nav-label-secondary">TOOLS</div>
+      <a class="nav-link" href="#scenario"><span class="nav-icon">◇</span> Scenario lab</a>
+      <a class="nav-link" href="#history"><span class="nav-icon">▤</span> Session data</a>
+      <div class="sidebar-bottom">
+        <div class="system-card"><span class="system-pulse" id="sidebarPulse"></span><div><strong id="sidebarConnection">Connecting</strong><small>Simulation link</small></div><span class="system-chevron">↗</span></div>
+        <div class="sidebar-foot">AUTONOMOUS MOBILITY<br><span>CONTROL CENTER · v1.0</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content" id="overview">
+      <header class="topbar">
+        <div class="mobile-brand"><span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 22h22M8 17h16M12 12h8M16 5v22"/><circle cx="16" cy="16" r="12"/></svg></span>FLOWSTATE</div>
+        <div class="breadcrumb">Operations <span>/</span> Live overview</div>
+        <div class="topbar-right"><span class="topbar-mode" id="topbarMode">MODE —</span><div class="last-updated"><span class="live-dot"></span><span id="updatedAt">Waiting for telemetry…</span></div><button class="icon-button theme-toggle" id="themeToggle" type="button" aria-label="Dark mode active. Switch to light mode" title="Dark mode">🌙</button><button class="icon-button" id="settingsButton" aria-label="Dashboard settings" title="Settings">⚙</button><button class="icon-button" id="fullscreenButton" aria-label="Enter fullscreen" title="Fullscreen">⛶</button><button class="icon-button" id="refreshButton" aria-label="Refresh data" title="Refresh now">⟳</button></div>
+      </header>
+
+      <section class="page-heading">
+        <div><div class="eyebrow"><span class="eyebrow-line"></span> INTERSECTION 01 · CITY GRID</div><h1>Traffic overview</h1><p class="page-subtitle">Real-time intersection intelligence and signal operations.</p></div>
+        <div class="status-indicators"><div class="heading-status" id="backendBadge"><span class="status-dot"></span><span>Checking backend</span></div><div class="heading-status" id="telemetryBadge"><span class="status-dot"></span><span>Checking simulation</span></div></div>
+      </section>
+
+      <section class="connection-banner hidden" id="connectionBanner" role="status"><span class="banner-icon">!</span><div><strong id="bannerTitle">Connection unavailable</strong><span id="bannerMessage">Waiting for the API to respond.</span></div><button id="retryButton" class="text-button">Retry ↗</button></section>
+      <div class="notice-banner"><span class="notice-symbol">i</span><span id="simulationNotice"><strong>Checking simulation status.</strong> Pause, resume, reset, and density changes apply to the connected simulator.</span></div>
+
+      <section class="metric-grid" aria-label="Live traffic metrics">
+        <article class="metric-card primary-card"><div class="metric-head"><span class="metric-label">Vehicles on road</span><span class="metric-icon vehicle-icon">↗</span></div><div class="metric-value" id="totalVehicles">—</div><div class="metric-foot"><span class="metric-detail"><span class="tiny-dot cyan"></span><span id="metricFreshness">Awaiting real telemetry</span></span><span class="live-pill" id="livePill">—</span></div></article>
+        <article class="metric-card"><div class="metric-head"><span class="metric-label">Average wait</span><span class="metric-icon wait-icon">◷</span></div><div class="metric-value"><span id="averageWait">—</span><small class="unit">sec</small></div><div class="metric-foot"><span class="metric-detail">Vehicles currently on road</span></div></article>
+        <article class="metric-card"><div class="metric-head"><span class="metric-label">Vehicles passed</span><span class="metric-icon passed-icon">⇢</span></div><div class="metric-value" id="vehiclesPassed">—</div><div class="metric-foot"><span class="metric-detail">Cumulative simulation count</span></div></article>
+        <article class="metric-card"><div class="metric-head"><span class="metric-label">Peak queue</span><span class="metric-icon queue-icon">▤</span></div><div class="metric-value"><span id="maximumQueue">—</span><small class="unit">veh</small></div><div class="metric-foot"><span class="metric-detail">Longest approach queue</span></div></article>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel intersection-panel" id="intersection">
+          <div class="panel-heading"><div><div class="panel-kicker">LIVE SIGNAL CONTROL</div><h2>Intersection status</h2></div><span id="modePill" class="mode-pill">MODE UNAVAILABLE</span></div>
+          <div class="intersection-layout">
+            <div class="intersection-map" aria-label="Intersection and active direction signals">
+              <div class="road vertical-road"></div><div class="road horizontal-road"></div>
+              <div class="lane-mark lane-mark-v"></div><div class="lane-mark lane-mark-h"></div>
+              <span class="direction-label dir-n">N</span><span class="direction-label dir-s">S</span><span class="direction-label dir-e">E</span><span class="direction-label dir-w">W</span>
+              <span class="signal signal-ns signal-n"><i id="signalNorth"></i></span><span class="signal signal-ns signal-s"><i id="signalSouth"></i></span>
+              <span class="signal signal-ew signal-e"><i id="signalEast"></i></span><span class="signal signal-ew signal-w"><i id="signalWest"></i></span>
+              <div class="intersection-center"><span>JCT</span><b>01</b></div>
+            </div>
+            <div class="signal-details" id="controller">
+              <section class="phase-monitor disconnected" id="phaseMonitor" aria-label="Current signal phase">
+                <div class="phase-monitor-heading">
+                  <div><div class="panel-kicker">CURRENT PHASE</div><div class="active-phase" id="activePhase">Unavailable</div></div>
+                  <span class="phase-status-badge" id="phaseStatusLabel">DISCONNECTED</span>
+                </div>
+                <div class="phase-monitor-main">
+                  <div class="phase-gauge" id="phaseGauge" role="img" aria-label="Live phase countdown unavailable">
+                    <svg viewBox="0 0 100 100" aria-hidden="true">
+                      <circle class="phase-gauge-track" cx="50" cy="50" r="40"></circle>
+                      <circle class="phase-gauge-progress" id="phaseProgress" cx="50" cy="50" r="40"></circle>
+                    </svg>
+                    <div class="phase-countdown"><strong id="phaseCountdown">—</strong><span>SEC</span></div>
+                  </div>
+                  <div class="phase-live-details">
+                    <span class="phase-label">SIGNAL STATE</span>
+                    <div class="phase-signal-state"><i id="phaseSignalDot"></i><strong id="phaseSignalState">Unavailable</strong></div>
+                    <div class="phase-duration"><span>Phase duration</span><strong id="greenDuration">—</strong></div>
+                    <div class="phase-duration"><span>Next transition</span><strong id="phaseTransitionCountdown">—</strong></div>
+                  </div>
+                </div>
+                <div class="phase-preview">
+                  <div><span class="phase-label">NEXT PHASE PREVIEW</span><strong id="nextPhasePreview">Waiting for simulator</strong></div>
+                  <span class="phase-preview-time" id="nextPhaseTime">—</span>
+                </div>
+                <div class="phase-connection-warning" id="phaseConnectionWarning" role="status">
+                  <strong>Signal timing is not live.</strong>
+                  <span id="phaseLastUpdate">Waiting for simulator timing data.</span>
+                </div>
+              </section>
+              <div class="decision-box"><div class="decision-title"><span class="decision-spark">✳</span> Controller rationale</div><p id="decisionReason">Waiting for the simulator’s first controller decision.</p></div>
+              <div class="telemetry-time">Decision time <span id="decisionTime">—</span></div>
+            </div>
+          </div>
+          <div class="panel-divider"></div>
+          <div class="vehicle-breakdown"><div class="breakdown-heading">VEHICLES BY TYPE <span>LIVE COUNTS</span></div><div class="vehicle-types"><div class="type-item"><span class="type-symbol motorcycle">◉</span><div><strong id="motorcycleCount">—</strong><small>Motorcycles</small></div></div><div class="type-item"><span class="type-symbol car">▰</span><div><strong id="carCount">—</strong><small>Cars</small></div></div><div class="type-item"><span class="type-symbol truck">▰</span><div><strong id="truckCount">—</strong><small>Trucks</small></div></div></div></div>
+        </article>
+
+        <article class="panel queues-panel"><div class="panel-heading"><div><div class="panel-kicker">APPROACH MONITOR</div><h2>Queue lengths</h2></div><span class="subtle-label">VEHICLES / APPROACH</span></div><p class="panel-caption queue-method-note">Simulation estimate: vehicles marked waiting within approximately 150 px of the approach stop line.</p>
+          <div class="queue-list" id="queueList">
+            <div class="queue-row" data-direction="north"><div class="queue-direction"><span class="direction-arrow">↑</span><span>North</span></div><div class="queue-track"><i></i></div><strong>—</strong><small class="direction-state">—</small></div>
+            <div class="queue-row" data-direction="south"><div class="queue-direction"><span class="direction-arrow">↓</span><span>South</span></div><div class="queue-track"><i></i></div><strong>—</strong><small class="direction-state">—</small></div>
+            <div class="queue-row" data-direction="east"><div class="queue-direction"><span class="direction-arrow">→</span><span>East</span></div><div class="queue-track"><i></i></div><strong>—</strong><small class="direction-state">—</small></div>
+            <div class="queue-row" data-direction="west"><div class="queue-direction"><span class="direction-arrow">←</span><span>West</span></div><div class="queue-track"><i></i></div><strong>—</strong><small class="direction-state">—</small></div>
+          </div>
+          <div class="queue-summary"><span>Average queue / approach</span><strong id="avgQueue">—</strong></div>
+          <div class="panel-divider"></div>
+          <div class="mode-control"><div><strong>Signal strategy</strong><small>Switch at a safe phase boundary</small></div><label class="select-wrap"><span class="sr-only">Choose controller mode</span><select id="modeSelect"><option value="fixed">Fixed-time</option><option value="adaptive">Adaptive</option></select><span class="select-arrow">⌄</span></label></div>
+          <div class="control-feedback" id="controlFeedback" aria-live="polite">Mode control requires a connected simulator.</div>
+        </article>
+      </section>
+
+      <section class="analytics-section" id="analytics"><div class="section-heading"><div><div class="panel-kicker">RECORDED TELEMETRY</div><h2>Traffic analytics</h2><p class="section-subtitle">Charts use saved simulation snapshots; select a window and export the recorded data.</p></div><div class="section-actions"><label class="select-wrap range-select"><span class="sr-only">Chart time window</span><select id="chartRange"><option value="5">Last 5 minutes</option><option value="15">Last 15 minutes</option><option value="all" selected>Latest snapshots</option></select><span class="select-arrow">⌄</span></label><a class="outline-link" href="/api/analytics/export" download>Export CSV ↗</a></div></div><div class="history-meta" id="historyMeta">Historical data loading…</div>
+        <div class="chart-grid">
+          <article class="panel chart-panel"><div class="chart-title"><div><h3>Approach queues</h3><p>Queue count · recent snapshots</p></div><span class="chart-unit">VEHICLES</span></div><div class="chart-wrap"><svg id="queueChart" class="line-chart" viewBox="0 0 520 190" role="img" aria-label="Queue length history"></svg></div><div class="chart-legend"><span><i class="legend-dot legend-n"></i>North</span><span><i class="legend-dot legend-s"></i>South</span><span><i class="legend-dot legend-e"></i>East</span><span><i class="legend-dot legend-w"></i>West</span></div><div class="chart-state hidden">No historical queue snapshots yet.</div></article>
+          <article class="panel chart-panel"><div class="chart-title"><div><h3>Waiting time</h3><p>Average time · recent snapshots</p></div><span class="chart-unit">SECONDS</span></div><div class="chart-wrap"><svg id="waitChart" class="line-chart" viewBox="0 0 520 190" role="img" aria-label="Average waiting time history"></svg></div><div class="chart-legend single-legend"><span><i class="legend-dot legend-wait"></i>Average wait</span></div><div class="chart-state hidden">No historical wait snapshots yet.</div></article>
+          <article class="panel chart-panel throughput-panel"><div class="chart-title"><div><h3>Vehicles passed</h3><p>Cumulative counter · recent snapshots</p></div><span class="chart-unit">VEHICLES</span></div><div class="chart-wrap"><svg id="throughputChart" class="line-chart" viewBox="0 0 520 190" role="img" aria-label="Vehicles passed history"></svg></div><div class="chart-legend single-legend"><span><i class="legend-dot legend-throughput"></i>Cumulative passed</span></div><div class="chart-state hidden">No historical throughput snapshots yet.</div></article>
+        </div>
+        <div class="history-strip" id="historySummary"><span class="history-strip-icon">◷</span><span>Historical summary will appear when saved telemetry is available.</span></div>
+        <div class="chart-grid secondary-charts">
+          <article class="panel chart-panel"><div class="chart-title"><div><h3>Vehicle composition</h3><p>Recorded vehicle counts · recent samples</p></div><span class="chart-unit">VEHICLES</span></div><div class="chart-wrap"><svg id="compositionChart" class="line-chart" viewBox="0 0 520 190" role="img" aria-label="Vehicle category counts over history"></svg></div><div class="chart-legend"><span><i class="legend-dot legend-moto"></i>Motorcycle</span><span><i class="legend-dot legend-car"></i>Car</span><span><i class="legend-dot legend-truck"></i>Truck</span></div><div class="chart-state hidden">No vehicle composition history recorded.</div></article>
+          <article class="panel chart-panel phase-history-panel"><div class="chart-title"><div><h3>Signal phase history</h3><p>Recorded phase · one segment per saved snapshot</p></div><span class="chart-unit">PHASE</span></div><div class="phase-history" id="phaseHistory" role="img" aria-label="Signal phase history from recorded metric snapshots"></div><div class="chart-legend phase-legend"><span><i class="legend-dot legend-phase-ns"></i>NS</span><span><i class="legend-dot legend-phase-ew"></i>EW</span><span><i class="legend-dot legend-phase-clear"></i>Clearance</span></div><div class="chart-state hidden">No signal phase history recorded.</div></article>
+          <article class="panel chart-panel"><div class="chart-title"><div><h3>Fixed vs adaptive</h3><p>Recorded by simulator-confirmed mode</p></div><a class="text-button" href="/api/controller/performance" target="_blank" rel="noreferrer">View API ↗</a></div><div class="performance-table" id="performanceTable"><div class="empty-note">Loading recorded mode comparisons…</div></div><div class="chart-state hidden">Recorded mode comparison unavailable.</div></article>
+        </div>
+      </section>
+      <section class="lower-grid" id="events">
+        <article class="panel events-panel"><div class="panel-heading"><div><div class="panel-kicker">OBSERVED IN THIS BROWSER SESSION</div><h2>Alerts & event timeline</h2></div><label class="select-wrap compact-select"><span class="sr-only">Filter alert severity</span><select id="eventFilter"><option value="all">All events</option><option value="warning">Warnings</option><option value="critical">Critical</option><option value="info">Info</option></select><span class="select-arrow">⌄</span></label></div><p class="panel-caption">Threshold alerts are evaluated from received telemetry. Phase and connection events are observed while this page is open; this is not a persisted backend event log.</p><div class="event-list" id="eventList"><div class="empty-note">Waiting for real telemetry events.</div></div></article>
+        <article class="panel scenario-panel" id="scenario"><div class="panel-kicker">LIVE SIMULATION CONTROLS</div><h2>Experiment controls</h2><p class="panel-caption">Controls apply to the running Pygame window. Start that process directly; vehicle mix ratios are fixed.</p><div class="scenario-state" id="scenarioState" role="status" aria-live="polite">Waiting for simulator status…</div><div class="scenario-actions"><button class="primary-action" id="pauseResumeButton" type="button" disabled>Pause simulation</button><button class="outline-link button-link" id="resetSimulationButton" type="button" disabled>Reset vehicles</button></div><label class="density-control" for="densityInput"><span><strong>Traffic density</strong><output id="densityValue">—</output></span><small>Higher density spawns vehicles more frequently.</small><input id="densityInput" type="range" min="1" max="10" step="1" value="3" disabled></label><div class="control-feedback" id="scenarioFeedback" aria-live="polite">Controls unlock when the simulator heartbeat is connected.</div></article>
+      </section>
+      <section class="panel session-panel" id="history"><div class="panel-heading"><div><div class="panel-kicker">PERSISTED TELEMETRY</div><h2>Session data & reports</h2></div><a class="outline-link" href="/api/analytics/export" download>Download CSV</a></div><p class="panel-caption">Metric snapshots are saved in the current database. Reliable session start/end boundaries are not yet wired to the simulator, so session-level reports are withheld.</p><div class="session-summary" id="sessionSummary"><span>Saved snapshots</span><strong id="sessionSnapshotCount">—</strong><span>Last recorded sample</span><strong id="sessionLastSample">—</strong><span>Report scope</span><strong>Recorded metrics CSV</strong></div></section>
+      <footer class="footer"><span>FLOWSTATE <i>·</i> AUTONOMOUS TRAFFIC MANAGEMENT</span><span>Data refresh <strong id="refreshIntervalLabel">3 seconds</strong> <button id="refreshRateButton" class="text-button">Change</button></span></footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <button class="assistant-launcher" id="assistantLauncher" type="button" aria-label="Open Traffic AI Assistant" aria-controls="trafficAssistant" aria-expanded="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a8 8 0 0 0-8 8v5a2 2 0 0 0 2 2h2v-6H5.1A7 7 0 0 1 19 12h-3v6h2a2 2 0 0 0 2-2v-5a8 8 0 0 0-8-8Z"/><path d="M9 14h.01M15 14h.01M9.5 17a4 4 0 0 0 5 0"/></svg>
+  </button>
+  <section class="assistant-panel" id="trafficAssistant" role="dialog" aria-modal="false" aria-labelledby="assistantTitle" aria-hidden="true" inert>
+    <header class="assistant-header">
+      <span class="assistant-avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 3a8 8 0 0 0-8 8v5a2 2 0 0 0 2 2h2v-6H5.1A7 7 0 0 1 19 12h-3v6h2a2 2 0 0 0 2-2v-5a8 8 0 0 0-8-8Z"/><path d="M9 14h.01M15 14h.01M9.5 17a4 4 0 0 0 5 0"/></svg>
+      </span>
+      <div class="assistant-heading-copy">
+        <h2 id="assistantTitle">Traffic AI Assistant</h2>
+        <span class="assistant-status"><i></i> Demo mode · telemetry when available</span>
+      </div>
+      <button class="assistant-close" id="assistantClose" type="button" aria-label="Close Traffic AI Assistant">×</button>
+    </header>
+    <div class="assistant-disclaimer">Rule-based demo assistant. Uses dashboard telemetry; it does not control real traffic signals.</div>
+    <div class="assistant-messages" id="assistantMessages" role="log" aria-label="Assistant conversation" aria-live="polite" aria-relevant="additions text"></div>
+    <div class="assistant-typing" id="assistantTyping" aria-live="polite" hidden><span></span><span></span><span></span><span class="sr-only">Assistant is typing</span></div>
+    <div class="assistant-quick-actions" aria-label="Suggested traffic questions">
+      <button type="button" data-assistant-action="analyze_traffic">Analyze Traffic</button>
+      <button type="button" data-assistant-action="check_congestion">Check Congestion</button>
+      <button type="button" data-assistant-action="optimize_signals">Optimize Signals</button>
+      <button type="button" data-assistant-action="predict_traffic">Predict Traffic</button>
+      <button type="button" data-assistant-action="emergency_mode">Emergency Mode</button>
+    </div>
+    <form class="assistant-compose" id="assistantForm">
+      <label class="sr-only" for="assistantInput">Message Traffic AI Assistant</label>
+      <textarea id="assistantInput" name="message" rows="1" maxlength="1000" placeholder="Ask about traffic conditions…" required></textarea>
+      <button class="assistant-send" id="assistantSend" type="submit" aria-label="Send message" title="Send message">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14"/></svg>
+      </button>
+    </form>
+    <p class="assistant-hint">Enter to send · Shift+Enter for a new line</p>
+  </section>
+  <dialog class="settings-dialog" id="settingsDialog" aria-labelledby="settingsTitle"><form method="dialog" id="settingsForm"><div class="dialog-heading"><div><div class="panel-kicker">LOCAL DASHBOARD PREFERENCES</div><h2 id="settingsTitle">Settings</h2></div><button class="icon-button" value="cancel" aria-label="Close settings">×</button></div><label>Refresh interval<select id="settingsRefresh"><option value="3000">3 seconds</option><option value="5000">5 seconds</option><option value="10000">10 seconds</option></select></label><label>Queue warning threshold <span class="settings-unit">vehicles / approach</span><input id="queueThreshold" type="number" min="1" max="100" step="1" required></label><label>Waiting warning threshold <span class="settings-unit">seconds</span><input id="waitThreshold" type="number" min="1" max="3600" step="1" required></label><div class="settings-note">Preferences are stored in this browser only. They do not change controller safety limits or simulation settings.</div><div class="dialog-actions"><button class="outline-link button-link" value="cancel">Cancel</button><button class="primary-action" id="saveSettings" value="save">Save preferences</button></div></form></dialog>
+  <script src="/dashboard/app.js?v=4" defer></script>
+  <script src="/dashboard/assistant.js?v=3" defer></script>
+</body>
+</html>
